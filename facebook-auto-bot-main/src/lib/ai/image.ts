@@ -26,7 +26,7 @@ const PHOTO_STYLE =
 async function fetchAiImageBytes(prompt: string): Promise<Blob> {
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(
     `${prompt}, ${PHOTO_STYLE}`
-  )}?width=${WIDTH}&height=${HEIGHT}&nologo=true&seed=${Math.floor(Math.random() * 1_000_000)}`;
+  )}?width=${WIDTH}&height=${HEIGHT}&nologo=true&private=true&noenhance=true&seed=${Math.floor(Math.random() * 1_000_000)}`;
 
   const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`Pollinations image API ${res.status}`);

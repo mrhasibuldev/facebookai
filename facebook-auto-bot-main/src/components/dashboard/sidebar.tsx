@@ -9,7 +9,7 @@ import {
   ClockCountdown,
   ListChecks,
   FlagBanner,
-  GearSix,
+  UsersThree,
 } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/cn";
@@ -21,7 +21,7 @@ const NAV = [
   { href: "/dashboard/queue", label: "Queue", icon: ClockCountdown },
   { href: "/dashboard/history", label: "History", icon: ListChecks },
   { href: "/dashboard/pages", label: "Pages", icon: FlagBanner },
-  { href: "/dashboard/settings", label: "Settings", icon: GearSix },
+  { href: "/dashboard/settings", label: "Social Connect", icon: UsersThree },
 ];
 
 export function Sidebar() {
