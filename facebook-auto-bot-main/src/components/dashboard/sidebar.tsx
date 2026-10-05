@@ -10,6 +10,7 @@ import {
   ListChecks,
   FlagBanner,
   UsersThree,
+  Gear,
 } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/cn";
@@ -22,6 +23,7 @@ const NAV = [
   { href: "/dashboard/history", label: "History", icon: ListChecks },
   { href: "/dashboard/pages", label: "Pages", icon: FlagBanner },
   { href: "/dashboard/settings", label: "Social Connect", icon: UsersThree },
+  { href: "/dashboard/account-settings", label: "Settings", icon: Gear },
 ];
 
 export function Sidebar() {

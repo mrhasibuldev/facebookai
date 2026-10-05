@@ -292,7 +292,7 @@ export default function GeneratePage() {
       {step === "generating" && (
         <Card className="animate-pulse">
           <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-            <div className="aspect-square rounded-xl bg-surface-2" />
+            <div className="aspect-square w-full max-w-[320px] mx-auto rounded-xl bg-surface-2" />
             <div className="space-y-3">
               <div className="h-6 w-3/4 rounded bg-surface-2" />
               <div className="h-4 w-full rounded bg-surface-2" />
@@ -306,7 +306,7 @@ export default function GeneratePage() {
       {step === "ready" && content && image && (
         <Card>
           <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-            <div>
+            <div className="w-full max-w-[320px] mx-auto md:mx-0">
               <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
                 <Image src={image.url} alt={content.title} fill unoptimized className="object-cover" />
               </div>

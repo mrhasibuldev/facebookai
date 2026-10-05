@@ -18,7 +18,7 @@ import type { Post } from "@/lib/types";
 
 interface DashboardContentProps {
   posts: Post[];
-  settings: any;
+  settings: import("@/lib/types").AppSettings;
   posted: Post[];
   postedThisWeek: Post[];
   scheduled: Post[];
@@ -57,7 +57,7 @@ export function DashboardContent({
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total posted" value={posted.length} icon={MegaphoneSimple} tone="primary" />
         <StatCard label="Posted this week" value={postedThisWeek.length} icon={CalendarCheck} tone="success" />
         <StatCard label="In queue" value={scheduled.length} icon={ClockCountdown} tone="warning" />

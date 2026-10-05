@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { logError } from "@/lib/errors";
 
 /**
  * Server-only Supabase client using the service-role key.
@@ -11,16 +12,28 @@ export function supabaseAdmin() {
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error("Missing required Supabase environment variables");
+    const missing = [];
+    if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!supabaseServiceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+    logError("SupabaseAdmin", new Error(`Missing environment variables: ${missing.join(", ")}`));
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}. Please check your .env.local file.`
+    );
   }
 
-  return createServerClient(supabaseUrl, supabaseServiceRoleKey, {
-    cookies: {
-      getAll() {
-        return [];
+  try {
+    return createServerClient(supabaseUrl, supabaseServiceRoleKey, {
+      cookies: {
+        getAll() {
+          return [];
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    logError("SupabaseAdmin", err);
+    throw new Error("Failed to initialize Supabase admin client. Please check your configuration.");
+  }
 }
 
 /**
@@ -35,14 +48,26 @@ export async function supabaseServer() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing required Supabase environment variables");
+    const missing = [];
+    if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!supabaseAnonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
+    logError("SupabaseServer", new Error(`Missing environment variables: ${missing.join(", ")}`));
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}. Please check your .env.local file.`
+    );
   }
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+  try {
+    return createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    logError("SupabaseServer", err);
+    throw new Error("Failed to initialize Supabase server client. Please check your configuration.");
+  }
 }

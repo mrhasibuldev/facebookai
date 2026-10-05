@@ -99,7 +99,8 @@ export default function TopicsPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pendingLines = useMemo(
     () => draft.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),

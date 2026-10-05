@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Moon, Sun } from "@phosphor-icons/react/dist/ssr";
 
 export function ThemeToggle() {
-  const [dark, setDark] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setDark(document.documentElement.classList.contains("dark"));
-  }, []);
+  const [dark, setDark] = useState<boolean | null>(() => {
+    if (typeof document === 'undefined') return null;
+    return document.documentElement.classList.contains("dark");
+  });
 
   function toggle() {
     const next = !document.documentElement.classList.contains("dark");

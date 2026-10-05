@@ -1,4 +1,4 @@
--- Facebook Auto Bot — Initial Schema
+-- FeedWren — Initial Schema
 -- Run this to create all tables from scratch
 
 create extension if not exists "pgcrypto";

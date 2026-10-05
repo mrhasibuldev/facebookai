@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/server";
 import type { Topic } from "@/lib/types";
+import { getAuthenticatedUser } from "@/lib/auth/server-auth";
 
 /**
  * Thrown when the database predates the topics feature. Installs made before
@@ -37,12 +37,8 @@ export function normaliseTopic(raw: string): string {
 }
 
 export async function listTopics(): Promise<Topic[]> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { data, error } = await db
     .from("topics")
@@ -59,11 +55,8 @@ export async function listTopics(): Promise<Topic[]> {
  * so pasting the same list twice changes nothing.
  */
 export async function addTopics(rawTexts: string[]): Promise<{ added: number; skipped: number }> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const existing = new Set((await listTopics()).map((t) => t.text.toLowerCase()));
 
@@ -95,12 +88,8 @@ export async function updateTopic(
   id: string,
   patch: Partial<Pick<Topic, "enabled" | "text">>
 ): Promise<Topic> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { data, error } = await db
     .from("topics")
@@ -114,12 +103,8 @@ export async function updateTopic(
 }
 
 export async function deleteTopic(id: string): Promise<void> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { error } = await db.from("topics").delete().eq("id", id).eq("user_id", user.id);
   raise(error, "delete topic");
@@ -132,12 +117,8 @@ export async function deleteTopic(id: string): Promise<void> {
  * to show on screen.
  */
 export async function nextTopic(): Promise<Topic | null> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { data, error } = await db
     .from("topics")
@@ -152,12 +133,8 @@ export async function nextTopic(): Promise<Topic | null> {
 }
 
 export async function markTopicUsed(topic: Topic): Promise<void> {
+  const user = await getAuthenticatedUser();
   const db = await supabaseServer();
-  const { data: { user } } = await db.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { error } = await db
     .from("topics")

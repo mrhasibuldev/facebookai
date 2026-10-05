@@ -47,6 +47,18 @@ export interface AppSettings {
   /** Absent on databases created before topics existed; treat as "mine". */
   topic_source?: TopicSource;
   updated_at: string;
+  /** Account profile settings */
+  display_name: string | null;
+  username: string | null;
+  bio: string | null;
+  website: string | null;
+  avatar_url: string | null;
+  /** User preferences */
+  theme: string;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  weekly_reports: boolean;
+  two_factor_enabled: boolean;
 }
 
 export interface Post {

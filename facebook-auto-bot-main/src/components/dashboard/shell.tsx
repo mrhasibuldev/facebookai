@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,7 +10,8 @@ import {
   ClockCountdown,
   ListChecks,
   FlagBanner,
-  GearSix,
+  UsersThree,
+  Gear,
   List,
   X,
   SignOut,
@@ -19,8 +20,8 @@ import {
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
-import { supabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 const NAV = [
   { href: "/dashboard", label: "Overview", icon: House },
@@ -29,7 +30,8 @@ const NAV = [
   { href: "/dashboard/queue", label: "Queue", icon: ClockCountdown },
   { href: "/dashboard/history", label: "History", icon: ListChecks },
   { href: "/dashboard/pages", label: "Pages", icon: FlagBanner },
-  { href: "/dashboard/settings", label: "Settings", icon: GearSix },
+  { href: "/dashboard/settings", label: "Social Connect", icon: UsersThree },
+  { href: "/dashboard/account-settings", label: "Settings", icon: Gear },
 ];
 
 const TITLES: Record<string, string> = {
@@ -39,38 +41,33 @@ const TITLES: Record<string, string> = {
   "/dashboard/queue": "Queue",
   "/dashboard/history": "History",
   "/dashboard/pages": "Pages",
-  "/dashboard/settings": "Settings",
+  "/dashboard/settings": "Social Connect",
+  "/dashboard/account-settings": "Settings",
 };
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { user, isLoading, signOut } = useAuth();
 
-  useEffect(() => {
-    // Get user session
-    supabaseClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => {
-        setUserEmail(user?.email ?? null);
-      });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabaseClient().auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user.email ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Show loading state while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const title =
     TITLES[pathname] ?? TITLES[Object.keys(TITLES).find((k) => pathname.startsWith(k)) ?? ""] ?? "";
 
   async function logout() {
-    await supabaseClient().auth.signOut();
+    await signOut();
     router.push("/login");
     router.refresh();
   }
@@ -118,6 +115,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </nav>
+            <div className="border-t border-border pt-4 text-xs text-muted-foreground">
+              Free-tier powered · AI text &amp; images at $0
+            </div>
           </div>
         </div>
       )}
@@ -136,10 +136,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {userEmail && (
+            {user?.email && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                 <User size={16} />
-                <span className="max-w-[150px] truncate">{userEmail}</span>
+                <span className="max-w-[150px] truncate">{user.email}</span>
               </div>
             )}
             <ThemeToggle />

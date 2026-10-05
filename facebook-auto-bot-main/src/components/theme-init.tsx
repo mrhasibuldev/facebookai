@@ -8,7 +8,9 @@ export function ThemeInit() {
       const stored = localStorage.getItem("pab-theme");
       const dark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.classList.toggle("dark", dark);
-    } catch (e) {}
+    } catch {
+      // Ignore localStorage errors
+    }
   }, []);
   return null;
 }

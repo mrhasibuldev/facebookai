@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
 export default function RootPage() {
-  redirect("/dashboard");
+  // This should never be reached because middleware handles all redirects
+  // But as a safety fallback, redirect to login
+  redirect("/login");
 }

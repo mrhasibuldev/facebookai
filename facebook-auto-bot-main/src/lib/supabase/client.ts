@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { logError } from "@/lib/errors";
 
 /**
  * Client-side Supabase client for browser auth.
@@ -20,18 +21,60 @@ export function supabaseClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    const missing = [];
+    if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!supabaseAnonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
+    logError("SupabaseClient", new Error(`Missing environment variables: ${missing.join(", ")}`));
+    console.error("[SupabaseClient] Missing environment variables:", missing);
     throw new Error(
-      "Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Check .env.local"
+      `Missing required environment variables: ${missing.join(", ")}. Please check your .env.local file.`
     );
   }
 
-  supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
+  try {
+    console.log("[SupabaseClient] Initializing client with URL:", supabaseUrl);
+    supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        get(name: string) {
+          if (typeof document === 'undefined') return '';
+          const value = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith(name + '='))
+            ?.split('=')[1];
+          return value || '';
+        },
+        set(name: string, value: string, options: { maxAge?: number; path?: string; domain?: string; secure?: boolean; httpOnly?: boolean; sameSite?: string | boolean }) {
+          if (typeof document === 'undefined') return;
+          let cookieString = `${name}=${value}`;
+          if (options.maxAge) cookieString += `; Max-Age=${options.maxAge}`;
+          if (options.path) cookieString += `; Path=${options.path}`;
+          if (options.domain) cookieString += `; Domain=${options.domain}`;
+          if (options.secure) cookieString += `; Secure`;
+          if (options.httpOnly) cookieString += `; HttpOnly`;
+          if (options.sameSite) cookieString += `; SameSite=${options.sameSite}`;
+          document.cookie = cookieString;
+        },
+        remove(name: string, options: { path?: string; domain?: string }) {
+          if (typeof document === 'undefined') return;
+          let cookieString = `${name}=; Max-Age=0`;
+          if (options.path) cookieString += `; Path=${options.path}`;
+          if (options.domain) cookieString += `; Domain=${options.domain}`;
+          document.cookie = cookieString;
+        },
+      },
+    });
+    console.log("[SupabaseClient] Client initialized successfully");
+  } catch (err) {
+    logError("SupabaseClient", err);
+    console.error("[SupabaseClient] Initialization error:", err);
+    // Check if error is related to database not being set up
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (errorMsg.includes('relation') || errorMsg.includes('table') || errorMsg.includes('does not exist')) {
+      throw new Error("Database not configured. Please run the SQL schema from supabase/schema.sql in your Supabase SQL Editor.");
+    }
+    throw new Error("Failed to initialize Supabase client. Please check your configuration.");
+  }
 
   return supabaseClientInstance;
 }

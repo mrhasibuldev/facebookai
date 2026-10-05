@@ -1,9 +1,11 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useState, useEffect, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
+import { getAuthErrorMessage, logError } from "@/lib/errors";
+import { useAuth } from "@/lib/auth/auth-provider";
 
 export default function LoginPage() {
   return (
@@ -16,61 +18,94 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(params.get("message"));
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push(params.get("next") || "/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router, params]);
+
+  // Check for database configuration error
+  useEffect(() => {
+    const dbError = params.get("error");
+    if (dbError === "database") {
+      setError("Database not configured. Please set up your Supabase database by running the SQL schema in supabase/schema.sql");
+    }
+  }, [params]);
+
+  // Show loading while auth state is being checked
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    console.log("=== LOGIN FORM SUBMIT STARTED ===");
-    console.log("Email:", email);
-    console.log("Password length:", password.length);
-
     setLoading(true);
     setError(null);
     setMessage(null);
 
     // Basic validation
     if (!email || !email.includes("@") || !email.includes(".")) {
-      console.log("Email validation failed");
       setError("Please enter a valid email address.");
       setLoading(false);
       return;
     }
 
-    console.log("Validation passed, starting Supabase login...");
+    if (!password || password.length < 1) {
+      setError("Please enter your password.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const supabase = supabaseClient();
-      console.log("Supabase client created");
 
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("Login API response:", { data, signInError });
-
       if (signInError) {
-        console.error("Supabase login error:", signInError);
-        throw signInError;
+        logError("Login", signInError, { email });
+        const errorMsg = getAuthErrorMessage(signInError);
+        // Check if error is related to database not being set up
+        if (errorMsg.includes('relation') || errorMsg.includes('table') || errorMsg.includes('does not exist')) {
+          setError("Database not configured. Please run the SQL schema from supabase/schema.sql in your Supabase SQL Editor.");
+        } else {
+          setError(errorMsg);
+        }
+        setLoading(false);
+        return;
       }
-
-      console.log("Login successful, session:", data.session);
-      console.log("Redirecting to:", params.get("next") || "/dashboard");
 
       router.push(params.get("next") || "/dashboard");
       router.refresh();
     } catch (err) {
-      console.error("=== LOGIN ERROR ===", err);
-      const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
-      setError(errorMessage);
+      logError("Login", err);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      // Check if error is related to database not being set up
+      if (errorMsg.includes('relation') || errorMsg.includes('table') || errorMsg.includes('does not exist') || errorMsg.includes('Database not configured')) {
+        setError("Database not configured. Please run the SQL schema from supabase/schema.sql in your Supabase SQL Editor.");
+      } else {
+        setError("An unexpected error occurred. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
-
-    console.log("=== LOGIN FORM SUBMIT ENDED ===");
   }
 
   return (
@@ -128,6 +163,12 @@ function LoginForm() {
             placeholder="••••••••"
           />
 
+          <div className="mt-3 flex justify-end">
+            <a href="/forgot-password" className="text-sm text-primary hover:underline">
+              Forgot password?
+            </a>
+          </div>
+
           {error && (
             <p role="alert" className="mt-3 text-sm text-destructive">
               {error}
@@ -143,7 +184,7 @@ function LoginForm() {
           </button>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <a href="/signup" className="text-primary hover:underline">
               Sign up
             </a>

@@ -4,14 +4,13 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
-import { getAuthErrorMessage, logError } from "@/lib/errors";
+import { logError } from "@/lib/errors";
 import { useAuth } from "@/lib/auth/auth-provider";
 
-export default function SignupPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -47,78 +46,23 @@ export default function SignupPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      setLoading(false);
-      return;
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      setError("Password must contain at least one uppercase letter.");
-      setLoading(false);
-      return;
-    }
-
-    if (!/[0-9]/.test(password)) {
-      setError("Password must contain at least one number.");
-      setLoading(false);
-      return;
-    }
-
     try {
       const supabase = supabaseClient();
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (signUpError) {
-        logError("Signup", signUpError, { email });
-        const errorMsg = getAuthErrorMessage(signUpError);
-        // Check if error is related to database not being set up
-        if (errorMsg.includes('relation') || errorMsg.includes('table') || errorMsg.includes('does not exist')) {
-          setError("Database not configured. Please run the SQL schema from supabase/schema.sql in your Supabase SQL Editor.");
-        } else {
-          setError(errorMsg);
-        }
+      if (resetError) {
+        logError("Forgot Password", resetError, { email });
+        setError("An error occurred. Please try again later.");
         setLoading(false);
         return;
       }
 
-      // After successful signup
-      if (data.user) {
-        // Create default settings for the user using a server-side API call
-        // This is needed because RLS might block client-side inserts
-        try {
-          const settingsRes = await fetch('/api/create-settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: data.user.id }),
-          });
-
-          if (!settingsRes.ok) {
-            console.error("Failed to create settings:", await settingsRes.text());
-            // Don't block signup if settings fail
-          }
-        } catch (settingsErr) {
-          console.error("Settings creation error:", settingsErr);
-          // Don't block signup
-        }
-
-        // If email confirmation is disabled, user is automatically signed in
-        if (data.session) {
-          router.push("/dashboard");
-          router.refresh();
-        } else {
-          // Email confirmation required
-          setSuccess(true);
-        }
-      } else {
-        setError("Failed to create user. Please try again.");
-      }
+      // Always show success message regardless of whether email exists
+      setSuccess(true);
     } catch (err) {
-      logError("Signup", err);
+      logError("Forgot Password", err);
       setError("An unexpected error occurred. Please try again later.");
     } finally {
       setLoading(false);
@@ -142,13 +86,13 @@ export default function SignupPage() {
           <div className="rounded-card border border-border bg-surface p-8 shadow-xl shadow-black/5 text-center">
             <h1 className="font-heading text-xl font-bold text-foreground">Check your email</h1>
             <p className="mt-4 text-sm text-muted-foreground">
-              We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please click the link to verify your account.
+              If an account exists for <strong>{email}</strong>, we&apos;ve sent a password reset link to your email address.
             </p>
             <button
               onClick={() => router.push("/login")}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
             >
-              Go to login
+              Back to Sign In
             </button>
           </div>
         </div>
@@ -173,9 +117,9 @@ export default function SignupPage() {
           onSubmit={onSubmit}
           className="rounded-card border border-border bg-surface p-8 shadow-xl shadow-black/5"
         >
-          <h1 className="font-heading text-xl font-bold text-foreground">Create an account</h1>
+          <h1 className="font-heading text-xl font-bold text-foreground">Forgot your password?</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign up to start automating your Facebook posts.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
 
           <label className="mt-6 block text-sm font-medium text-foreground" htmlFor="email">
@@ -192,21 +136,6 @@ export default function SignupPage() {
             placeholder="you@example.com"
           />
 
-          <label className="mt-4 block text-sm font-medium text-foreground" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
-            placeholder="••••••••"
-          />
-          <p className="mt-1 text-xs text-muted-foreground">Minimum 6 characters, with at least one uppercase letter and one number</p>
-
           {error && (
             <p role="alert" className="mt-3 text-sm text-destructive">
               {error}
@@ -217,13 +146,12 @@ export default function SignupPage() {
             type="submit"
             disabled={loading}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => console.log("Button clicked")}
           >
-            {loading ? "Creating account…" : "Sign up"}
+            {loading ? "Sending..." : "Send reset link"}
           </button>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Remember your password?{" "}
             <a href="/login" className="text-primary hover:underline">
               Sign in
             </a>

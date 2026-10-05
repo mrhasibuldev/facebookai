@@ -432,6 +432,18 @@ const SettingsBody = z.object({
   posting_hours: z.array(z.number().int().min(0).max(23)).min(1).max(24).optional(),
   timezone: z.string().min(1).max(64).optional(),
   topic_source: z.enum(["mine", "trending", "mixed"]).optional(),
+  // Account profile settings
+  display_name: z.string().max(100).optional(),
+  username: z.string().max(50).optional(),
+  bio: z.string().max(150).optional(),
+  website: z.string().max(200).optional(),
+  avatar_url: z.string().url().nullable().optional(),
+  // User preferences
+  theme: z.enum(["system", "light", "dark"]).optional(),
+  email_notifications: z.boolean().optional(),
+  push_notifications: z.boolean().optional(),
+  weekly_reports: z.boolean().optional(),
+  two_factor_enabled: z.boolean().optional(),
 });
 
 const UpdateTopicBody = z.object({

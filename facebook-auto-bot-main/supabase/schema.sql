@@ -1,4 +1,4 @@
--- Facebook Auto Bot — Supabase schema
+-- FeedWren — Supabase schema
 -- Run this in the Supabase SQL editor (Dashboard > SQL Editor > New query).
 --
 -- Safe to run again at any time. Every statement only creates what is missing,
@@ -100,6 +100,11 @@ insert into storage.buckets (id, name, public)
 values ('post-images', 'post-images', true)
 on conflict (id) do nothing;
 
+-- Public bucket for user avatars
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
 -- ---------------------------------------------------------------------------
 -- Upgrades
 --
@@ -113,6 +118,18 @@ alter table app_settings add column if not exists facebook_app_id text;
 alter table app_settings add column if not exists facebook_app_secret text;
 alter table app_settings add column if not exists facebook_config_id text;
 alter table app_settings add column if not exists topic_source text not null default 'mine';
+
+-- Account settings for profile management
+alter table app_settings add column if not exists display_name text;
+alter table app_settings add column if not exists username text;
+alter table app_settings add column if not exists bio text;
+alter table app_settings add column if not exists website text;
+alter table app_settings add column if not exists avatar_url text;
+alter table app_settings add column if not exists theme text not null default 'system';
+alter table app_settings add column if not exists email_notifications boolean not null default true;
+alter table app_settings add column if not exists push_notifications boolean not null default false;
+alter table app_settings add column if not exists weekly_reports boolean not null default true;
+alter table app_settings add column if not exists two_factor_enabled boolean not null default false;
 
 -- Migration: add user_id to existing tables for multi-user support
 -- This must be done BEFORE enabling RLS and creating policies
@@ -175,6 +192,11 @@ alter table posts enable row level security;
 alter table topics enable row level security;
 
 -- RLS policies for app_settings
+-- Drop existing policies if they exist (PostgreSQL doesn't support IF NOT EXISTS for policies)
+drop policy if exists "Users can view their own settings" on app_settings;
+drop policy if exists "Users can insert their own settings" on app_settings;
+drop policy if exists "Users can update their own settings" on app_settings;
+
 create policy "Users can view their own settings"
   on app_settings for select
   using (auth.uid() = user_id);
@@ -188,6 +210,11 @@ create policy "Users can update their own settings"
   using (auth.uid() = user_id);
 
 -- RLS policies for posts
+drop policy if exists "Users can view their own posts" on posts;
+drop policy if exists "Users can insert their own posts" on posts;
+drop policy if exists "Users can update their own posts" on posts;
+drop policy if exists "Users can delete their own posts" on posts;
+
 create policy "Users can view their own posts"
   on posts for select
   using (auth.uid() = user_id);
@@ -205,6 +232,11 @@ create policy "Users can delete their own posts"
   using (auth.uid() = user_id);
 
 -- RLS policies for topics
+drop policy if exists "Users can view their own topics" on topics;
+drop policy if exists "Users can insert their own topics" on topics;
+drop policy if exists "Users can update their own topics" on topics;
+drop policy if exists "Users can delete their own topics" on topics;
+
 create policy "Users can view their own topics"
   on topics for select
   using (auth.uid() = user_id);
@@ -220,3 +252,36 @@ create policy "Users can update their own topics"
 create policy "Users can delete their own topics"
   on topics for delete
   using (auth.uid() = user_id);
+
+-- RLS policies for avatars storage bucket
+drop policy if exists "Users can upload their own avatar" on storage.objects;
+drop policy if exists "Users can view their own avatar" on storage.objects;
+drop policy if exists "Users can delete their own avatar" on storage.objects;
+drop policy if exists "Users can update their own avatar" on storage.objects;
+drop policy if exists "Public read access" on storage.objects;
+
+-- Public read access for avatars
+create policy "Public read access"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "Users can upload their own avatar"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
+
+create policy "Users can update their own avatar"
+  on storage.objects for update
+  with check (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
+
+create policy "Users can delete their own avatar"
+  on storage.objects for delete
+  using (
+    bucket_id = 'avatars' and
+    auth.uid()::text = (string_to_array(name, '/'))[1]
+  );
