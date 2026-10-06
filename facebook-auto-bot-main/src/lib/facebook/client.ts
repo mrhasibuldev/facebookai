@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { GRAPH_BASE } from "@/lib/facebook/oauth";
 import type { AppSettings } from "@/lib/types";
+import { getAuthenticatedUser } from "@/lib/auth/server-auth";
 
 export class FacebookNotConnectedError extends Error {
   constructor() {
@@ -15,8 +16,9 @@ export class NoPageSelectedError extends Error {
 }
 
 async function loadSettings(): Promise<AppSettings> {
+  const user = await getAuthenticatedUser();
   const db = supabaseAdmin();
-  const { data } = await db.from("app_settings").select("*").eq("id", 1).single<AppSettings>();
+  const { data } = await db.from("app_settings").select("*").eq("user_id", user.id).single<AppSettings>();
   if (!data) throw new Error("Settings row is missing.");
   return data;
 }
