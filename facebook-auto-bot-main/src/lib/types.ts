@@ -18,7 +18,7 @@ export interface Topic {
 }
 
 export interface AppSettings {
-  id: 1;
+  id: number;
   /** Meta app credentials, normally entered in Settings rather than env vars. */
   facebook_app_id: string | null;
   facebook_app_secret: string | null;
@@ -59,6 +59,8 @@ export interface AppSettings {
   push_notifications: boolean;
   weekly_reports: boolean;
   two_factor_enabled: boolean;
+  /** Phone number for security notifications (E.164 format preferred) */
+  phone: string | null;
 }
 
 export interface Post {

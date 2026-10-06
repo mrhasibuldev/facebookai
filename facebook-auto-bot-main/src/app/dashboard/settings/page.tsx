@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import type { ImageSourcePref } from "@/lib/types";
+import { FutureSocialPlatforms } from "@/components/social/future-platforms";
 
 const TIMEZONES = [
   "Asia/Karachi",
@@ -423,6 +424,9 @@ function SettingsForm() {
           </div>
         </div>
       </Card>
+
+      {/* Future social platforms */}
+      <FutureSocialPlatforms />
 
       {/* Generation preferences */}
       <Card>

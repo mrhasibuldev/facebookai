@@ -11,6 +11,7 @@ import {
   listDuePosts,
   listPosts,
   updatePostRecord,
+  getPostsCountThisMonth,
 } from "@/lib/db/posts";
 import { getSettings, updateSettings } from "@/lib/db/settings";
 import {
@@ -182,6 +183,11 @@ export async function GET(req: Request, ctx: Ctx) {
         status: status ? (status.split(",") as PostStatus[]) : undefined,
       });
       return json({ posts });
+    }
+
+    if (route === "posts/count") {
+      const count = await getPostsCountThisMonth();
+      return json({ count });
     }
 
     if (route === "facebook/pages") {
@@ -444,6 +450,7 @@ const SettingsBody = z.object({
   push_notifications: z.boolean().optional(),
   weekly_reports: z.boolean().optional(),
   two_factor_enabled: z.boolean().optional(),
+  phone: z.string().max(50).nullable().optional(),
 });
 
 const UpdateTopicBody = z.object({

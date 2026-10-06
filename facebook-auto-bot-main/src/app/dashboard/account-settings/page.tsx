@@ -1,10 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   CheckCircle,
   X,
   Upload,
+  SignOut,
+  Shield,
+  FileText,
+  Database,
+  Question,
+  ArrowRight,
+  CaretDown,
 } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +23,12 @@ import { getDatabaseErrorMessage, logError } from "@/lib/errors";
 import { processAvatarImage, getUserInitials } from "@/lib/image-utils";
 import { supabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { COUNTRIES, searchCountries } from "@/lib/countries";
 
 export default function AccountSettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,8 +53,14 @@ export default function AccountSettingsPage() {
   const [security, setSecurity] = useState({
     twoFactorEnabled: false,
     loginNotifications: true,
-    passwordLastChanged: "30 days ago",
+    phone: "",
+    country: COUNTRIES[0], // Default to Bangladesh
   });
+
+  const [countrySelectorOpen, setCountrySelectorOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const countrySelectorRef = useRef<HTMLDivElement>(null);
 
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -71,12 +88,18 @@ export default function AccountSettingsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/settings");
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+
+      // Parallel fetch settings and post count
+      const [settingsRes, postsCountRes] = await Promise.all([
+        fetch("/api/settings"),
+        fetch("/api/posts/count"),
+      ]);
+
+      if (!settingsRes.ok) {
+        const errorData = await settingsRes.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to load settings");
       }
-      const data: Record<string, unknown> = await res.json();
+      const data: Record<string, unknown> = await settingsRes.json();
 
       setProfile({
         name: (data.display_name as string) || "",
@@ -93,10 +116,27 @@ export default function AccountSettingsPage() {
         preview: (data.avatar_url as string) || null,
       });
 
+      // Parse phone number to extract country code and number
+      const savedPhone = (data.phone as string) || "";
+      let selectedCountry = COUNTRIES[0]; // Default to Bangladesh
+      let phoneNumber = savedPhone;
+
+      if (savedPhone) {
+        // Try to match country code from saved phone
+        for (const country of COUNTRIES) {
+          if (savedPhone.startsWith(country.dialCode)) {
+            selectedCountry = country;
+            phoneNumber = savedPhone.replace(country.dialCode, "");
+            break;
+          }
+        }
+      }
+
       setSecurity({
         twoFactorEnabled: (data.two_factor_enabled as boolean) || false,
         loginNotifications: (data.email_notifications as boolean) || true,
-        passwordLastChanged: "30 days ago",
+        phone: phoneNumber,
+        country: selectedCountry,
       });
 
       setPreferences({
@@ -110,18 +150,12 @@ export default function AccountSettingsPage() {
         setTheme(data.theme as "light" | "dark" | "system");
       }
 
-      // Load post count for subscription
-      const postsRes = await fetch("/api/posts");
-      if (postsRes.ok) {
-        const postsData = await postsRes.json();
-        const posts = Array.isArray(postsData) ? postsData : (postsData.posts || []);
-        const thisMonth = new Date().toISOString().slice(0, 7);
-        const postsThisMonth = posts.filter(
-          (p: { created_at?: string }) => p.created_at?.startsWith(thisMonth)
-        ).length;
+      // Load post count for subscription (lightweight endpoint)
+      if (postsCountRes.ok) {
+        const countData = await postsCountRes.json();
         setSubscription(prev => ({
           ...prev,
-          postsThisMonth,
+          postsThisMonth: countData.count || 0,
         }));
       }
     } catch (err) {
@@ -139,12 +173,51 @@ export default function AccountSettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Close country selector when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        countrySelectorRef.current &&
+        !countrySelectorRef.current.contains(event.target as Node)
+      ) {
+        setCountrySelectorOpen(false);
+        setCountrySearch("");
+      }
+    }
+
+    if (countrySelectorOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [countrySelectorOpen]);
+
   async function handleSave() {
     setSaving(true);
     setSaved(false);
     setError(null);
+    setPhoneError(null);
 
     try {
+      // Validate phone number if provided
+      if (security.phone) {
+        const digitsOnly = security.phone.replace(/\D/g, "");
+        if (digitsOnly.length < security.country.minLength) {
+          setPhoneError(`Phone number must be at least ${security.country.minLength} digits`);
+          setSaving(false);
+          return;
+        }
+        if (digitsOnly.length > security.country.maxLength) {
+          setPhoneError(`Phone number is too long (max ${security.country.maxLength} digits)`);
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Normalize phone number to E.164 format
+      const normalizedPhone = security.phone
+        ? `${security.country.dialCode}${security.phone.replace(/\D/g, "")}`
+        : "";
+
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -159,6 +232,7 @@ export default function AccountSettingsPage() {
           push_notifications: preferences.pushNotifications,
           weekly_reports: preferences.weeklyReports,
           two_factor_enabled: security.twoFactorEnabled,
+          phone: normalizedPhone,
         }),
       });
 
@@ -187,7 +261,7 @@ export default function AccountSettingsPage() {
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [preferences, security.twoFactorEnabled, loading, theme]);
+  }, [preferences, security.twoFactorEnabled, security.phone, security.country, loading, theme]);
 
   async function handleAvatarUpload(file: File) {
     if (!user) {
@@ -294,6 +368,65 @@ export default function AccountSettingsPage() {
       const errorObj = err && typeof err === 'object' && 'message' in err ? err as { message?: string; code?: string } : null;
       setError(getDatabaseErrorMessage(errorObj) || "Failed to remove avatar");
       setAvatarState({ ...avatarState, uploading: false });
+    }
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  async function handlePasswordChange() {
+    setPasswordError(null);
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("All fields are required");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      const supabase = supabaseClient();
+
+      // First verify current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: passwordForm.currentPassword,
+      });
+
+      if (signInError) {
+        setPasswordError("Current password is incorrect");
+        return;
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword,
+      });
+
+      if (updateError) {
+        setPasswordError(updateError.message);
+        return;
+      }
+
+      // Success
+      setShowPasswordDialog(false);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      logError("Password Change", err);
+      setPasswordError("An error occurred while changing password");
     }
   }
 
@@ -503,20 +636,9 @@ export default function AccountSettingsPage() {
               <h3 className="text-sm font-medium text-foreground">Two-Factor Authentication</h3>
               <p className="text-xs text-muted-foreground">Add an extra layer of security</p>
             </div>
-            <button
-              onClick={() => setSecurity({ ...security, twoFactorEnabled: !security.twoFactorEnabled })}
-              className={cn(
-                "relative h-5 w-9 rounded-full transition-colors",
-                security.twoFactorEnabled ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                  security.twoFactorEnabled ? "translate-x-5" : "translate-x-0.5"
-                )}
-              />
-            </button>
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+              Coming Soon
+            </span>
           </div>
 
           {/* Login Notifications */}
@@ -541,11 +663,92 @@ export default function AccountSettingsPage() {
             </button>
           </div>
 
+          {/* Phone Number */}
+          <div className="py-3">
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+              Phone Number
+            </label>
+            <div className="flex gap-2">
+              {/* Country Selector */}
+              <div className="relative" ref={countrySelectorRef}>
+                <button
+                  type="button"
+                  onClick={() => setCountrySelectorOpen(!countrySelectorOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 min-w-[140px] hover:bg-surface-2 transition-colors"
+                >
+                  <span className="text-lg">{security.country.flag}</span>
+                  <span className="text-xs text-muted-foreground">{security.country.dialCode}</span>
+                  <CaretDown size={14} className="text-muted-foreground" />
+                </button>
+
+                {countrySelectorOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-72 max-h-64 overflow-y-auto rounded-lg border border-border bg-background shadow-lg z-50">
+                    <div className="sticky top-0 bg-background border-b border-border p-2">
+                      <input
+                        type="text"
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        placeholder="Search country..."
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="py-1">
+                      {searchCountries(countrySearch).map((country) => (
+                        <button
+                          key={country.code}
+                          type="button"
+                          onClick={() => {
+                            setSecurity({ ...security, country });
+                            setCountrySelectorOpen(false);
+                            setCountrySearch("");
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-surface-2 transition-colors",
+                            security.country.code === country.code && "bg-surface-2"
+                          )}
+                        >
+                          <span className="text-lg">{country.flag}</span>
+                          <span className="flex-1 text-left">{country.name}</span>
+                          <span className="text-xs text-muted-foreground">{country.dialCode}</span>
+                        </button>
+                      ))}
+                      {searchCountries(countrySearch).length === 0 && (
+                        <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                          No countries found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Phone Input */}
+              <input
+                type="tel"
+                value={security.phone}
+                onChange={(e) => {
+                  // Only allow digits and spaces
+                  const value = e.target.value.replace(/[^\d\s]/g, "");
+                  setSecurity({ ...security, phone: value });
+                }}
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                placeholder={security.country.example}
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Used for security notifications. Verification coming soon.
+            </p>
+            {phoneError && (
+              <p className="mt-1 text-xs text-destructive">{phoneError}</p>
+            )}
+          </div>
+
           {/* Password */}
           <div className="flex items-center justify-between py-3">
             <div className="flex-1">
               <h3 className="text-sm font-medium text-foreground">Password</h3>
-              <p className="text-xs text-muted-foreground">Last changed {security.passwordLastChanged}</p>
+              <p className="text-xs text-muted-foreground">Change your password</p>
             </div>
             <Button size="sm" variant="secondary" onClick={() => setShowPasswordDialog(true)}>
               Change
@@ -614,27 +817,7 @@ export default function AccountSettingsPage() {
               </Button>
               <Button
                 size="sm"
-                onClick={async () => {
-                  if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-                    setPasswordError("All fields are required");
-                    return;
-                  }
-                  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-                    setPasswordError("Passwords do not match");
-                    return;
-                  }
-                  if (passwordForm.newPassword.length < 8) {
-                    setPasswordError("Password must be at least 8 characters");
-                    return;
-                  }
-                  setPasswordError(null);
-                  // Simulate password change
-                  setSecurity({ ...security, passwordLastChanged: "Just now" });
-                  setShowPasswordDialog(false);
-                  setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-                  setSaved(true);
-                  setTimeout(() => setSaved(false), 2000);
-                }}
+                onClick={handlePasswordChange}
               >
                 Change Password
               </Button>
@@ -662,7 +845,6 @@ export default function AccountSettingsPage() {
                   {subscription.postsThisMonth} / {subscription.postsLimit} posts this month
                 </p>
               </div>
-              <Button size="sm">Upgrade</Button>
             </div>
           </div>
 
@@ -686,6 +868,9 @@ export default function AccountSettingsPage() {
                 <span className="font-medium text-foreground">{subscription.postsLimit}</span>
               </div>
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Paid plans coming soon
+            </p>
           </div>
         </div>
       </Card>
@@ -740,20 +925,9 @@ export default function AccountSettingsPage() {
               <h3 className="text-sm font-medium text-foreground">Push Notifications</h3>
               <p className="text-xs text-muted-foreground">Receive in-app notifications</p>
             </div>
-            <button
-              onClick={() => setPreferences({ ...preferences, pushNotifications: !preferences.pushNotifications })}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50",
-                preferences.pushNotifications ? "bg-primary" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                  preferences.pushNotifications ? "translate-x-6" : "translate-x-1"
-                )}
-              />
-            </button>
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+              Coming Soon
+            </span>
           </div>
 
           {/* Weekly Reports */}
@@ -777,6 +951,9 @@ export default function AccountSettingsPage() {
               />
             </button>
           </div>
+          <p className="text-xs text-muted-foreground -mt-2 mb-2">
+            Preference saved. Email delivery coming soon.
+          </p>
         </div>
       </Card>
 
@@ -791,10 +968,115 @@ export default function AccountSettingsPage() {
               <h3 className="text-sm font-medium text-foreground">Delete Account</h3>
               <p className="text-xs text-muted-foreground">Permanently delete your account and data</p>
             </div>
-            <Button size="sm" variant="danger">
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={async () => {
+                if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                  return;
+                }
+                if (!confirm("This will permanently delete all your data including posts, topics, and settings. Continue?")) {
+                  return;
+                }
+                try {
+                  const res = await fetch("/api/account/delete", { method: "POST" });
+                  if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || "Failed to delete account");
+                  }
+                  await signOut();
+                  router.push("/login");
+                  router.refresh();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to delete account");
+                }
+              }}
+            >
               Delete
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Legal & Support */}
+      <Card className="mb-4">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold text-foreground">Legal & Support</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Policies, data information, and help for using FeedWren
+          </p>
+        </div>
+        <div className="divide-y divide-border">
+          {/* Privacy Policy */}
+          <Link
+            href="/privacy"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors group"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Shield size={18} weight="regular" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground">Privacy Policy</h3>
+              <p className="text-xs text-muted-foreground">How FeedWren handles your data</p>
+            </div>
+            <ArrowRight size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+
+          {/* Terms of Service */}
+          <Link
+            href="/terms"
+            className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors group"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileText size={18} weight="regular" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground">Terms of Service</h3>
+              <p className="text-xs text-muted-foreground">FeedWren terms and conditions</p>
+            </div>
+            <ArrowRight size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+
+          {/* Data & AI Policy */}
+          <div className="flex items-center gap-3 px-4 py-3 opacity-60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Database size={18} weight="regular" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground">Data & AI Policy</h3>
+              <p className="text-xs text-muted-foreground">How your data and AI features are handled</p>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+              Coming Soon
+            </span>
+          </div>
+
+          {/* Support */}
+          <div className="flex items-center gap-3 px-4 py-3 opacity-60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Question size={18} weight="regular" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground">Support</h3>
+              <p className="text-xs text-muted-foreground">Get help with FeedWren</p>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+              Coming Soon
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Sign Out Button - Instagram Style */}
+      <Card className="mt-6">
+        <div className="px-4 py-4">
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive transition-all hover:bg-destructive/20 hover:shadow-sm"
+          >
+            <SignOut size={18} weight="regular" />
+            <span>Log out</span>
+          </button>
         </div>
       </Card>
 

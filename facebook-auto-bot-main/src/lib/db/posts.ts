@@ -102,6 +102,28 @@ export async function deletePostRecord(id: string): Promise<void> {
   }
 }
 
+/** Lightweight function to get post count for the current month */
+export async function getPostsCountThisMonth(): Promise<number> {
+  try {
+    const user = await getAuthenticatedUser();
+    const db = await supabaseServer();
+
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const { count, error } = await db
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", `${thisMonth}-01`)
+      .lt("created_at", `${thisMonth}-31`);
+
+    if (error) throw new Error(`Failed to count posts: ${error.message}`);
+    return count || 0;
+  } catch (err) {
+    logError("getPostsCountThisMonth", err);
+    throw new Error(getDatabaseErrorMessage(toErrorObject(err)));
+  }
+}
+
 /** Scheduled posts whose time has come, oldest first — used by the cron worker. */
 export async function listDuePosts(nowIso: string): Promise<Post[]> {
   try {

@@ -130,6 +130,7 @@ alter table app_settings add column if not exists email_notifications boolean no
 alter table app_settings add column if not exists push_notifications boolean not null default false;
 alter table app_settings add column if not exists weekly_reports boolean not null default true;
 alter table app_settings add column if not exists two_factor_enabled boolean not null default false;
+alter table app_settings add column if not exists phone text;
 
 -- Migration: add user_id to existing tables for multi-user support
 -- This must be done BEFORE enabling RLS and creating policies
@@ -285,3 +286,24 @@ create policy "Users can delete their own avatar"
     bucket_id = 'avatars' and
     auth.uid()::text = (string_to_array(name, '/'))[1]
   );
+
+-- RLS policies for post-images storage bucket
+drop policy if exists "Public read access for post-images" on storage.objects;
+drop policy if exists "Users can upload their own post-images" on storage.objects;
+drop policy if exists "Users can delete their own post-images" on storage.objects;
+
+-- Public read access for post-images
+create policy "Public read access for post-images"
+  on storage.objects for select
+  using (bucket_id = 'post-images');
+
+-- Users can upload post-images (via server-side operations with service role)
+-- No direct client upload policy - all uploads go through server API
+create policy "Server upload for post-images"
+  on storage.objects for insert
+  with check (bucket_id = 'post-images');
+
+-- Users can delete their own post-images (via server API)
+create policy "Server delete for post-images"
+  on storage.objects for delete
+  using (bucket_id = 'post-images');

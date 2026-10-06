@@ -10,6 +10,10 @@ const STORAGE_BUCKET = "post-images";
 const WIDTH = 1200;
 const HEIGHT = 1200;
 
+// Flag to enable/disable the new image engine service
+// Set to false to use the old implementation
+const USE_NEW_ENGINE_SERVICE = true;
+
 export function resolveImageSource(pref: ImageSourcePref): ImageSource {
   if (pref === "mixed") return Math.random() < 0.5 ? "ai" : "stock";
   return pref;
@@ -65,11 +69,22 @@ async function fetchStockImageBytes(query: string): Promise<Blob> {
  * re-hosting means a post's image keeps working forever, and Facebook's own
  * fetcher (which downloads the image itself at publish time) always sees a
  * stable, fast, first-party URL.
+ * 
+ * This function now uses the new Image Generation Service under the hood
+ * when USE_NEW_ENGINE_SERVICE is true, maintaining backward compatibility.
  */
 export async function generateImage(
   prompt: string,
   pref: ImageSourcePref
 ): Promise<{ url: string; source: ImageSource }> {
+  if (USE_NEW_ENGINE_SERVICE) {
+    // Use the new image engine service
+    const { createDefaultImageService } = await import("@/lib/image/service");
+    const service = await createDefaultImageService();
+    return service.generate(prompt, pref);
+  }
+
+  // Fall back to the old implementation for safety
   const source = resolveImageSource(pref);
 
   let blob: Blob;

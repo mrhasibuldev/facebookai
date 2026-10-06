@@ -15,6 +15,7 @@ export async function middleware(req: NextRequest) {
   const isAuthPage = pathname === "/login" || pathname === "/signup";
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isRootPage = pathname === "/";
+  const isPublicPage = pathname === "/privacy" || pathname === "/terms";
 
   try {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -37,6 +38,11 @@ export async function middleware(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     console.log("[MIDDLEWARE] Session check:", { pathname, hasSession: !!user, userEmail: user?.email });
+
+    // Allow public pages without authentication
+    if (isPublicPage) {
+      return res;
+    }
 
     if (isDashboardRoute && !user) {
       console.log("[MIDDLEWARE] Redirecting to login: no session");

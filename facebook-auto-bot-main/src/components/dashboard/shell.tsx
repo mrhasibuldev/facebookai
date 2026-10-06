@@ -14,8 +14,6 @@ import {
   Gear,
   List,
   X,
-  SignOut,
-  User,
 } from "@phosphor-icons/react/dist/ssr";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,7 +47,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading } = useAuth();
 
   // Show loading state while auth is initializing
   if (isLoading) {
@@ -65,12 +63,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const title =
     TITLES[pathname] ?? TITLES[Object.keys(TITLES).find((k) => pathname.startsWith(k)) ?? ""] ?? "";
-
-  async function logout() {
-    await signOut();
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -136,21 +128,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {user?.email && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-                <User size={16} />
-                <span className="max-w-[150px] truncate">{user.email}</span>
-              </div>
-            )}
             <ThemeToggle />
-            <button
-              onClick={logout}
-              aria-label="Sign out"
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
-            >
-              <SignOut size={16} />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
           </div>
         </header>
 
