@@ -33,6 +33,8 @@ interface ImageServiceConfig {
   enableIntelligence?: boolean;
   /** Seed for deterministic variation (optional) */
   seed?: number;
+  /** Whether to auto-generate variation seed from topic */
+  enableVariation?: boolean;
 }
 
 /**
@@ -41,6 +43,7 @@ interface ImageServiceConfig {
 export class ImageGenerationService {
   private registry: ImageEngineRegistry;
   private config: ImageServiceConfig;
+  private generationCounter: number = 0;
 
   constructor(registry: ImageEngineRegistry, config: ImageServiceConfig = {}) {
     this.registry = registry;
@@ -48,8 +51,29 @@ export class ImageGenerationService {
       enableFallback: true,
       defaultSource: "ai",
       enableIntelligence: true,
+      enableVariation: true,
       ...config,
     };
+  }
+
+  /**
+   * Generate a deterministic seed from topic string
+   * Uses a simple hash to convert topic to a number, then adds counter for variation
+   */
+  private generateSeed(topic: string): number {
+    // Simple hash of topic string
+    let hash = 0;
+    for (let i = 0; i < topic.length; i++) {
+      const char = topic.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    // Add timestamp + counter for variation across generations
+    const timestamp = Math.floor(Date.now() / 1000); // Seconds
+    this.generationCounter = (this.generationCounter + 1) % 100; // Cycle 0-99
+
+    return Math.abs(hash + timestamp + this.generationCounter);
   }
 
   /**
@@ -130,9 +154,17 @@ export class ImageGenerationService {
       // Create visual spec
       let visualSpec = createVisualSpec(understanding);
 
-      // Apply variation if seed is provided
-      if (this.config.seed !== undefined) {
-        visualSpec = generateVariedSpec(visualSpec, this.config.seed);
+      // Apply variation if:
+      // 1. Explicit seed is provided, OR
+      // 2. Variation is enabled (auto-generate seed from topic)
+      const seed = this.config.seed !== undefined
+        ? this.config.seed
+        : this.config.enableVariation
+          ? this.generateSeed(prompt)
+          : undefined;
+
+      if (seed !== undefined) {
+        visualSpec = generateVariedSpec(visualSpec, seed);
       }
 
       // Enhance request with visual spec data

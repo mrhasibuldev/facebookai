@@ -72,68 +72,84 @@ export interface TopicUnderstanding {
 const CATEGORY_PATTERNS: Record<TopicCategory, RegExp[]> = {
   health: [
     /\b(health|wellness|medical|doctor|hospital|medicine|treatment|disease|symptom|care)\b/i,
-    /\b(hydration|sleep|mental|stress|anxiety|depression|therapy)\b/i,
+    /\b(hydration|sleep|mental|stress|anxiety|depression|therapy|immunity|vitality)\b/i,
+    /\b(prevention|healing|wellbeing|wellness|fitness|nutrition|healthy)\b/i,
   ],
   fitness: [
     /\b(exercise|workout|fitness|gym|training|cardio|strength|muscle|athlete|runner)\b/i,
-    /\b(yoga|pilates|crossfit|swimming|cycling|jogging|sprinting)\b/i,
+    /\b(yoga|pilates|crossfit|swimming|cycling|jogging|sprinting|lifting|stretching)\b/i,
+    /\b(strength|endurance|flexibility|cardio|hiit|calisthenics|bodybuilding|training)\b/i,
   ],
   nutrition: [
     /\b(food|diet|nutrition|protein|carb|calorie|meal|recipe|cooking|eat|drink)\b/i,
-    /\b(breakfast|lunch|dinner|snack|healthy|organic|vegan|vegetarian)\b/i,
+    /\b(breakfast|lunch|dinner|snack|healthy|organic|vegan|vegetarian|keto|paleo)\b/i,
+    /\b(superfood|vitamin|mineral|macro|nutrient|hydration|balanced|diet)\b/i,
   ],
   education: [
     /\b(learn|teach|study|school|university|college|course|lesson|class|student)\b/i,
-    /\b(knowledge|skill|training|tutorial|education|academic|learning)\b/i,
+    /\b(knowledge|skill|training|tutorial|education|academic|learning|online|course)\b/i,
+    /\b(degree|certification|master|phd|scholarship|classroom|lecture|reading)\b/i,
   ],
   technology: [
     /\b(ai|artificial|intelligence|machine learning|software|app|code|programming|tech)\b/i,
-    /\b(digital|automation|robot|smart|computer|internet|data|algorithm)\b/i,
+    /\b(digital|automation|robot|smart|computer|internet|data|algorithm|software)\b/i,
+    /\b(development|coding|programming|blockchain|crypto|web|mobile|cloud|saas)\b/i,
   ],
   business: [
     /\b(business|company|startup|entrepreneur|marketing|sales|growth|revenue)\b/i,
-    /\b(strategy|brand|customer|client|enterprise|corporate|startup)\b/i,
+    /\b(strategy|brand|customer|client|enterprise|corporate|startup|scale)\b/i,
+    /\b(lead|conversion|funnel|revenue|profit|margin|scale|growth|churn)\b/i,
   ],
   finance: [
     /\b(money|finance|investment|savings|budget|debt|credit|bank|loan|tax)\b/i,
-    /\b(financial|wealth|income|expense|profit|cost|price|market)\b/i,
+    /\b(financial|wealth|income|expense|profit|cost|price|market|trading)\b/i,
+    /\b(budgeting|saving|investing|compound|interest|inflation|currency|asset)\b/i,
   ],
   productivity: [
     /\b(productivity|efficient|focus|time|manage|organize|plan|goal|habit|routine)\b/i,
-    /\b(workflow|deadline|priority|task|project|schedule|calendar)\b/i,
+    /\b(workflow|deadline|priority|task|project|schedule|calendar|pomodoro)\b/i,
+    /\b(goal|planning|prioritization|efficiency|focus|deep|work|time|management)\b/i,
   ],
   lifestyle: [
     /\b(lifestyle|daily|routine|habit|home|living|simple|minimal|quality)\b/i,
-    /\b(self-care|balance|mindful|wellbeing|happiness|personal)\b/i,
+    /\b(self-care|balance|mindful|wellbeing|happiness|personal|wellness)\b/i,
+    /\b(work-life|balance|minimalism|declutter|mindfulness|meditation|routine)\b/i,
   ],
   travel: [
     /\b(travel|trip|vacation|journey|adventure|explore|destination|tour|visit)\b/i,
-    /\b(beach|mountain|city|country|culture|experience|discover)\b/i,
+    /\b(beach|mountain|city|country|culture|experience|discover|backpack|tourism)\b/i,
+    /\b(vacation|holiday|getaway|excursion|destination|flight|hotel|adventure)\b/i,
   ],
   motivation: [
     /\b(motivation|inspire|success|achieve|goal|dream|ambition|mindset|believe)\b/i,
-    /\b(confidence|courage|determination|perseverance|overcome|growth)\b/i,
+    /\b(confidence|courage|determination|perseverance|overcome|growth|grit)\b/i,
+    /\b(resilience|positive|mindset|achievement|goal|setting|success|dream)\b/i,
   ],
   science: [
     /\b(science|research|study|experiment|discovery|innovation|theory|physics|biology)\b/i,
-    /\b(chemistry|nature|environmental|climate|energy|space|universe)\b/i,
+    /\b(chemistry|nature|environmental|climate|energy|space|universe|astronomy)\b/i,
+    /\b(laboratory|experiment|hypothesis|discovery|innovation|technology|data)\b/i,
   ],
   environment: [
     /\b(environment|climate|sustainability|green|eco|recycle|nature|planet|earth)\b/i,
-    /\b(solar|renewable|pollution|waste|conservation|carbon|footprint)\b/i,
+    /\b(solar|renewable|pollution|waste|conservation|carbon|footprint|climate)\b/i,
+    /\b(sustainability|carbon|neutral|eco|friendly|green|climate|change|energy)\b/i,
   ],
   news: [
     /\b(news|update|report|breaking|latest|current|event|headline|story)\b/i,
+    /\b(headline|breaking|update|current|event|trending|viral|story)\b/i,
   ],
   tutorial: [
     /\b(how to|guide|step by step|instruction|tips|tricks|hack|method)\b/i,
-    /\b(learn how|master|beginner|advanced|expert)\b/i,
+    /\b(learn how|master|beginner|advanced|expert|tutorial|course|training)\b/i,
   ],
   product: [
     /\b(product|item|tool|device|gadget|feature|review|best|top|recommend)\b/i,
+    /\b(tool|software|app|device|gadget|equipment|service|solution|platform)\b/i,
   ],
   social: [
     /\b(social|community|relationship|friend|family|connection|network|people)\b/i,
+    /\b(networking|community|relationship|friendship|connection|team|collaboration)\b/i,
   ],
   general: [],
 };
@@ -142,12 +158,12 @@ const CATEGORY_PATTERNS: Record<TopicCategory, RegExp[]> = {
  * Detect category from topic
  */
 function detectCategory(topic: string): TopicCategory {
-  const lowerTopic = topic.toLowerCase();
+  const topicLower = topic.toLowerCase();
 
   for (const [category, patterns] of Object.entries(CATEGORY_PATTERNS)) {
     if (patterns.length === 0) continue;
     for (const pattern of patterns) {
-      if (pattern.test(lowerTopic)) {
+      if (pattern.test(topicLower)) {
         return category as TopicCategory;
       }
     }
@@ -212,8 +228,9 @@ function detectEmotionalTone(topic: string): TopicUnderstanding["emotionalTone"]
   const positiveWords = ["success", "benefit", "improve", "better", "happy", "healthy", "good", "great", "best", "win", "achieve"];
   const negativeWords = ["problem", "issue", "fail", "bad", "worse", "stress", "anxiety", "pain", "loss", "risk", "danger"];
 
-  const positiveCount = positiveWords.filter(w => topic.toLowerCase().includes(w)).length;
-  const negativeCount = negativeWords.filter(w => topic.toLowerCase().includes(w)).length;
+  const topicLower = topic.toLowerCase();
+  const positiveCount = positiveWords.filter(w => topicLower.includes(w)).length;
+  const negativeCount = negativeWords.filter(w => topicLower.includes(w)).length;
 
   if (positiveCount > negativeCount) return "positive";
   if (negativeCount > positiveCount) return "negative";
@@ -225,16 +242,18 @@ function detectEmotionalTone(topic: string): TopicUnderstanding["emotionalTone"]
  * Detect user intent
  */
 function detectIntent(topic: string): TopicUnderstanding["intent"] {
-  if (/\b(benefits|advantages|why|importance|impact|effect)\b/i.test(topic)) {
+  const topicLower = topic.toLowerCase();
+
+  if (/\b(benefits|advantages|why|importance|impact|effect)\b/i.test(topicLower)) {
     return "educational";
   }
-  if (/\b(best|top|recommend|review|product|buy|get)\b/i.test(topic)) {
+  if (/\b(best|top|recommend|review|product|buy|get)\b/i.test(topicLower)) {
     return "promotional";
   }
-  if (/\b(tips|ideas|ways|how to|guide|tutorial)\b/i.test(topic)) {
+  if (/\b(tips|ideas|ways|how to|guide|tutorial)\b/i.test(topicLower)) {
     return "informational";
   }
-  if (/\b(motivation|inspire|success|achieve|dream|goal)\b/i.test(topic)) {
+  if (/\b(motivation|inspire|success|achieve|dream|goal)\b/i.test(topicLower)) {
     return "inspirational";
   }
 

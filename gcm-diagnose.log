@@ -1,0 +1,190 @@
+﻿Diagnose log at 2026-10-04T01:17:12Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.7.3+5fa7116896c82164996a609accd1c5ad90fe730a
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 22000)
+Reading environment variables... OK
+ Variables:
+SESSIONNAME=Console
+ProgramFiles(x86)=C:\Program Files (x86)
+MSYSTEM=MINGW64
+ProgramW6432=C:\Program Files
+EXEPATH=C:\Program Files\Git\bin
+ChocolateyInstall=C:\ProgramData\chocolatey
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 60 Stepping 3, GenuineIntel
+TMP=C:\Users\Nusaiba\AppData\Local\Temp
+PROCESSOR_ARCHITECTURE=AMD64
+SYSTEMROOT=C:\Windows
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW
+VSCODE_ESM_ENTRYPOINT=vs/workbench/api/node/extensionHostProcess
+VSCODE_CWD=C:\Users\Nusaiba\AppData\Local\Programs\Windsurf
+USERPROFILE=C:\Users\Nusaiba
+PWD=C:/Users/Nusaiba/Desktop/facebook
+USERDOMAIN=DESKTOP-PJMV8BT
+PROCESSOR_REVISION=3c03
+ChocolateyLastPathUpdate=134230463234901221
+FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+FPS_BROWSER_USER_PROFILE_STRING=Default
+LOGONSERVER=\\DESKTOP-PJMV8BT
+TEMP=C:\Users\Nusaiba\AppData\Local\Temp
+USERNAME=Nusaiba
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_9176_BHOPQWBOTXJXSUJA
+PLINK_PROTOCOL=ssh
+COMMONPROGRAMFILES=C:\Program Files\Common Files
+WINDSURF_EXT_HOST_PID=1092
+_=C:/Program Files/Git/mingw64/bin/git-credential-manager
+PATH=C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\Nusaiba\bin;C:\Python314\Scripts\;C:\Python314\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\ProgramData\chocolatey\bin;C:\Program Files\dotnet\;C:\Users\Nusaiba\AppData\Local\Microsoft\WindowsApps;C:\Users\Nusaiba\AppData\Roaming\npm;C:\Users\Nusaiba\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Nusaiba\AppData\Local\Python\bin;C:\Users\Nusaiba\AppData\Local\Programs\Windsurf\bin
+GIT_TERMINAL_PROMPT=0
+LOCALAPPDATA=C:\Users\Nusaiba\AppData\Local
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+ProgramData=C:\ProgramData
+HOMEPATH=\Users\Nusaiba
+COMPUTERNAME=DESKTOP-PJMV8BT
+WINDIR=C:\Windows
+VSCODE_HANDLES_UNCAUGHT_ERRORS=true
+ALLUSERSPROFILE=C:\ProgramData
+CommonProgramW6432=C:\Program Files\Common Files
+TERM=xterm-256color
+PROGRAMFILES=C:\Program Files
+SHLVL=0
+ACP_BACKEND=windsurf
+DriverData=C:\Windows\System32\Drivers\DriverData
+HOMEDRIVE=C:
+VSCODE_PID=9176
+VSCODE_CRASH_REPORTER_PROCESS_TYPE=extensionHost
+GIT_TRACE2_PARENT_SID=ded9cb7c-09d2-4253-909f-0645308edbdb
+WINDSURF_IDE_TYPE=windsurf
+NUMBER_OF_PROCESSORS=4
+OS=Windows_NT
+SYSTEMDRIVE=C:
+HOME=C:\Users\Nusaiba
+VSCODE_IPC_HOOK=\\.\pipe\7b2d2ed3-1.126.0-main-sock
+ELECTRON_RUN_AS_NODE=1
+PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+APPDATA=C:\Users\Nusaiba\AppData\Roaming
+OneDrive=C:\Users\Nusaiba\OneDrive
+PROCESSOR_LEVEL=6
+asl.log=Destination=file
+COMSPEC=C:\Windows\system32\cmd.exe
+VSCODE_NLS_CONFIG={"userLocale":"en-us","osLocale":"en-us","resolvedLanguage":"en","defaultMessagesFile":"C:\\Users\\Nusaiba\\AppData\\Local\\Programs\\Windsurf\\resources\\app\\out\\nls.messages.json","locale":"en-us","availableLanguages":{}}
+USERDOMAIN_ROAMINGPROFILE=DESKTOP-PJMV8BT
+VSCODE_CODE_CACHE_PATH=C:\Users\Nusaiba\AppData\Roaming\Devin\CachedData\b98cc43128712ba73c60cca73876f58a710aaa27
+PUBLIC=C:\Users\Public
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\Nusaiba\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\Nusaiba\AppData\Local\Temp\72894f04b25284076ca90c99'... OK
+Reading from temporary file 'C:\Users\Nusaiba\AppData\Local\Temp\72894f04b25284076ca90c99'... OK
+Deleting temporary file 'C:\Users\Nusaiba\AppData\Local\Temp\72894f04b25284076ca90c99'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\Nusaiba
+UserDataDirectoryPath: C:\Users\Nusaiba\.gcm
+GetCurrentDirectory(): C:\Users\Nusaiba\Desktop\facebook
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+ OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:51294/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.54.0.windows.1'
+Locating current repository...Git repository at 'C:/Users/Nusaiba/Desktop/facebook/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:C:/Program Files/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:C:/Program Files/Git/etc/gitconfig	filter.lfs.required=true
+file:C:/Program Files/Git/etc/gitconfig	http.sslbackend=schannel
+file:C:/Program Files/Git/etc/gitconfig	core.autocrlf=true
+file:C:/Program Files/Git/etc/gitconfig	core.fscache=true
+file:C:/Program Files/Git/etc/gitconfig	core.symlinks=false
+file:C:/Program Files/Git/etc/gitconfig	pull.rebase=false
+file:C:/Program Files/Git/etc/gitconfig	credential.helper=manager
+file:C:/Program Files/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:C:/Program Files/Git/etc/gitconfig	init.defaultbranch=master
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.symlinks=false
+file:.git/config	core.ignorecase=true
+file:.git/config	user.email=mrhasibuldev@users.noreply.github.com
+file:.git/config	user.name=mrhasibuldev
+file:.git/config	remote.origin.url=git@github.com:mrhasibuldev/facebookai.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+
+------------
+Diagnostic: Microsoft authentication (AAD/MSA)
+Skipped: False
+Success: True
+Exception: None
+Log:
+Broker is not enabled.
+Flow type is: Auto
+Gathering MSAL token cache data... OK
+CacheDirectory: C:\Users\Nusaiba\AppData\Local\.IdentityService
+CacheFileName: msal.cache
+CacheFilePath: C:\Users\Nusaiba\AppData\Local\.IdentityService\msal.cache
+Creating cache helper... OK
+Verifying MSAL token cache persistence... OK
+
+------------
+Diagnostic: GitHub API
+Skipped: False
+Success: True
+Exception: None
+Log:
+Using 'https://github.com/' as API target.
+Querying '/meta' endpoint... OK
+

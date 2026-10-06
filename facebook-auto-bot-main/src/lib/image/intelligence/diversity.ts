@@ -28,6 +28,10 @@ export interface VariationProfile {
   moodVariant: string;
   /** Perspective variant */
   perspectiveVariant: string;
+  /** Subject distance variant */
+  subjectDistance?: string;
+  /** Depth of field variant */
+  depthOfField?: string;
 }
 
 /**
@@ -35,34 +39,40 @@ export interface VariationProfile {
  */
 const COMPOSITION_FAMILIES = {
   person: [
-    { framing: "close-up" as const, camera: "eye-level" as const, description: "intimate portrait" },
-    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "engaging interaction" },
-    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "environmental context" },
-    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "empowering perspective" },
-    { framing: "medium-shot" as const, camera: "high-angle" as const, description: "contextual overview" },
+    { framing: "close-up" as const, camera: "eye-level" as const, description: "intimate portrait", distance: "close", dof: "shallow" },
+    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "engaging interaction", distance: "medium", dof: "medium" },
+    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "environmental context", distance: "far", dof: "deep" },
+    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "empowering perspective", distance: "medium", dof: "shallow" },
+    { framing: "medium-shot" as const, camera: "high-angle" as const, description: "contextual overview", distance: "far", dof: "deep" },
+    { framing: "extreme-close-up" as const, camera: "eye-level" as const, description: "detail focus", distance: "very close", dof: "very shallow" },
+    { framing: "full-body" as const, camera: "eye-level" as const, description: "full figure", distance: "far", dof: "medium" },
   ],
   action: [
-    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "dynamic action" },
-    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "action in context" },
-    { framing: "close-up" as const, camera: "eye-level" as const, description: "focused detail" },
-    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "powerful motion" },
+    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "dynamic action", distance: "medium", dof: "medium" },
+    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "action in context", distance: "far", dof: "deep" },
+    { framing: "close-up" as const, camera: "eye-level" as const, description: "focused detail", distance: "close", dof: "shallow" },
+    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "powerful motion", distance: "medium", dof: "shallow" },
+    { framing: "medium-shot" as const, camera: "dutch-angle" as const, description: "dynamic angle", distance: "medium", dof: "medium" },
   ],
   object: [
-    { framing: "close-up" as const, camera: "eye-level" as const, description: "product detail" },
-    { framing: "medium-close-up" as const, camera: "eye-level" as const, description: "product in use" },
-    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "lifestyle context" },
-    { framing: "close-up" as const, camera: "high-angle" as const, description: "flat lay" },
+    { framing: "close-up" as const, camera: "eye-level" as const, description: "product detail", distance: "close", dof: "shallow" },
+    { framing: "medium-close-up" as const, camera: "eye-level" as const, description: "product in use", distance: "medium", dof: "medium" },
+    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "lifestyle context", distance: "far", dof: "deep" },
+    { framing: "close-up" as const, camera: "high-angle" as const, description: "flat lay", distance: "very close", dof: "very shallow" },
+    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "dramatic product", distance: "medium", dof: "shallow" },
   ],
   scene: [
-    { framing: "long-shot" as const, camera: "eye-level" as const, description: "wide establishing" },
-    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "scene context" },
-    { framing: "long-shot" as const, camera: "high-angle" as const, description: "bird's eye view" },
-    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "scene detail" },
+    { framing: "long-shot" as const, camera: "eye-level" as const, description: "wide establishing", distance: "very far", dof: "deep" },
+    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "scene context", distance: "far", dof: "deep" },
+    { framing: "long-shot" as const, camera: "high-angle" as const, description: "bird's eye view", distance: "very far", dof: "deep" },
+    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "scene detail", distance: "medium", dof: "medium" },
+    { framing: "long-shot" as const, camera: "bird-s-eye" as const, description: "aerial view", distance: "very far", dof: "deep" },
   ],
   concept: [
-    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "symbolic representation" },
-    { framing: "close-up" as const, camera: "eye-level" as const, description: "focused symbol" },
-    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "conceptual scene" },
+    { framing: "medium-shot" as const, camera: "eye-level" as const, description: "symbolic representation", distance: "medium", dof: "medium" },
+    { framing: "close-up" as const, camera: "eye-level" as const, description: "focused symbol", distance: "close", dof: "shallow" },
+    { framing: "medium-long-shot" as const, camera: "eye-level" as const, description: "conceptual scene", distance: "far", dof: "deep" },
+    { framing: "medium-shot" as const, camera: "low-angle" as const, description: "monumental concept", distance: "medium", dof: "shallow" },
   ],
 };
 
@@ -75,6 +85,9 @@ const LIGHTING_FAMILIES: Lighting[] = [
   "soft",
   "studio",
   "dramatic",
+  "backlit",
+  "rim-light",
+  "hard",
 ];
 
 /**
@@ -85,7 +98,9 @@ const TIME_OF_DAY_FAMILIES: TimeOfDay[] = [
   "golden-hour",
   "afternoon",
   "blue-hour",
+  "evening",
   "indoor",
+  "night",
 ];
 
 /**
@@ -200,6 +215,8 @@ export function applyVariationToSpec(
     importantDetails: [
       ...(spec.importantDetails || []),
       variation.compositionVariant,
+      ...(variation.subjectDistance ? [variation.subjectDistance] : []),
+      ...(variation.depthOfField ? [variation.depthOfField] : []),
     ],
   };
 }
