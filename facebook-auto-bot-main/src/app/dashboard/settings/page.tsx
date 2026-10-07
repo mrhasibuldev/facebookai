@@ -697,9 +697,6 @@ function SettingsForm() {
                 <p className="text-muted-foreground mt-2">
                   <strong>Important:</strong> Facebook and Instagram are separate FeedWren integrations. Instagram does NOT depend on Facebook Pages.
                 </p>
-                <p className="text-muted-foreground mt-2">
-                  <a href="/docs/INSTAGRAM_SETUP.md" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Full Documentation →</a>
-                </p>
               </div>
 
               <div className="bg-surface-2 rounded-lg p-4">
