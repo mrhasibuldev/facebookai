@@ -1,11 +1,13 @@
 # Avatar Upload Fix Instructions
 
 ## Root Cause
-You manually renamed a Storage object to "profile photo", which broke the expected path structure.
+The RLS policies for the avatars storage bucket use the wrong array index to extract the user ID from the file path.
 
-**Application expects:** `{user_id}/avatar.webp` (e.g., `abc123-def456/avatar.webp`)
-**Your manual rename:** "profile photo" (no user ID folder)
-**RLS policy check:** `auth.uid()::text = (string_to_array(name, '/'))[1]`
+**Application uploads to:** `{user_id}/avatar.webp` (e.g., `abc123-def456/avatar.webp`)
+**Current RLS policy uses:** `(string_to_array(name, '/'))[1]` which extracts the filename (e.g., `avatar.webp`)
+**Should use:** `(string_to_array(name, '/'))[0]` which extracts the user ID folder (e.g., `abc123-def456`)
+
+This causes the policy to compare the user's ID against the filename instead of the user ID folder, which always fails and triggers "new row violates row-level security policy" errors.
 
 ## Fix Steps via Supabase Dashboard
 
@@ -33,19 +35,19 @@ You manually renamed a Storage object to "profile photo", which broke the expect
 - Name: `Users can upload their own avatar`
 - Allowed operation: `INSERT`
 - Target roles: `authenticated`
-- WITH CHECK condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]`
+- WITH CHECK condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[0]`
 
 **Policy 3: Update Own Avatar**
 - Name: `Users can update their own avatar`
 - Allowed operation: `UPDATE`
 - Target roles: `authenticated`
-- WITH CHECK condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]`
+- WITH CHECK condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[0]`
 
 **Policy 4: Delete Own Avatar**
 - Name: `Users can delete their own avatar`
 - Allowed operation: `DELETE`
 - Target roles: `authenticated`
-- USING condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[1]`
+- USING condition: `bucket_id = 'avatars' AND auth.uid()::text = (string_to_array(name, '/'))[0]`
 
 ### Step 4: Add avatar_url Column to Database
 If not already done, run this in Supabase SQL Editor:

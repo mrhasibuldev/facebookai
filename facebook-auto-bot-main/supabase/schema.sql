@@ -335,21 +335,21 @@ create policy "Users can upload their own avatar"
   on storage.objects for insert
   with check (
     bucket_id = 'avatars' and
-    auth.uid()::text = (string_to_array(name, '/'))[1]
+    auth.uid()::text = (string_to_array(name, '/'))[0]
   );
 
 create policy "Users can update their own avatar"
   on storage.objects for update
   with check (
     bucket_id = 'avatars' and
-    auth.uid()::text = (string_to_array(name, '/'))[1]
+    auth.uid()::text = (string_to_array(name, '/'))[0]
   );
 
 create policy "Users can delete their own avatar"
   on storage.objects for delete
   using (
     bucket_id = 'avatars' and
-    auth.uid()::text = (string_to_array(name, '/'))[1]
+    auth.uid()::text = (string_to_array(name, '/'))[0]
   );
 
 -- RLS policies for post-images storage bucket
