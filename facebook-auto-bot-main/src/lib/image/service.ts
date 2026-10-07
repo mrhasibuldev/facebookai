@@ -105,6 +105,9 @@ export class ImageGenerationService {
       // Map engine type back to source type
       const sourceType = this.engineTypeToSource(result.engine);
 
+      // Log successful generation
+      console.log(`[ImageService] Generated image using ${result.engine} in ${result.metadata.generationTimeMs}ms`);
+
       return {
         url: result.url,
         source: sourceType,
@@ -115,9 +118,13 @@ export class ImageGenerationService {
         const fallbackSource: ImageSource = source === "ai" ? "stock" : "ai";
         const fallbackEngineType = this.sourceToEngineType(fallbackSource);
 
+        console.warn(`[ImageService] Primary engine ${engineType} failed, falling back to ${fallbackEngineType}`);
+
         try {
           const fallbackRequest = this.buildRequest(prompt, fallbackEngineType);
           const fallbackResult = await this.generateWithEngine(fallbackRequest, fallbackEngineType);
+
+          console.log(`[ImageService] Fallback generation succeeded using ${fallbackResult.engine}`);
 
           return {
             url: fallbackResult.url,
@@ -125,6 +132,7 @@ export class ImageGenerationService {
           };
         } catch {
           // Fallback also failed, throw original error
+          console.error(`[ImageService] Fallback engine ${fallbackEngineType} also failed`);
           throw error instanceof Error ? error : new Error("Image generation failed");
         }
       }
@@ -245,6 +253,10 @@ export class ImageGenerationService {
   private sourceToEngineType(source: ImageSource): ImageEngineType {
     switch (source) {
       case "ai":
+        // Use SDXL Cloud if available, otherwise Pollinations
+        if (this.registry.get("feedwren-internal")?.available) {
+          return "feedwren-internal";
+        }
         return "pollinations-ai";
       case "stock":
         return "pexels-stock";
@@ -262,6 +274,8 @@ export class ImageGenerationService {
         return "ai";
       case "pexels-stock":
         return "stock";
+      case "feedwren-internal":
+        return "ai"; // SDXL Cloud is an AI source
       default:
         // For future engines, default to AI
         return "ai";

@@ -13,6 +13,8 @@ import {
   WarningCircle,
   CheckCircle,
   ArrowSquareOut,
+  InstagramLogo,
+  FacebookLogo,
 } from "@phosphor-icons/react/dist/ssr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,8 @@ export default function GeneratePage() {
   const [saving, setSaving] = useState<"draft" | "schedule" | "post_now" | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [instagramConnected, setInstagramConnected] = useState(false);
+  const [destinations, setDestinations] = useState<("facebook" | "instagram")[]>(["facebook"]);
 
   useEffect(() => {
     // Arriving from the Topics screen's "write now" link. Read directly rather
@@ -69,7 +73,10 @@ export default function GeneratePage() {
 
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => setImagePref(d.image_source ?? "ai"))
+      .then((d) => {
+        setImagePref(d.image_source ?? "ai");
+        setInstagramConnected(d.instagram_connected ?? false);
+      })
       .catch(() => {});
 
     fetch("/api/facebook/pages")
@@ -138,10 +145,19 @@ export default function GeneratePage() {
 
   async function save(action: "draft" | "schedule" | "post_now") {
     if (!content || !image) return;
-    if (action !== "draft" && !pageId) {
-      setError("Choose a Page before scheduling or posting.");
+
+    // Validate Instagram selection
+    if (destinations.includes("instagram") && !instagramConnected) {
+      setError("Connect Instagram in Settings before publishing to Instagram.");
       return;
     }
+
+    // For Facebook publishing, still need a page
+    if (destinations.includes("facebook") && action !== "draft" && !pageId) {
+      setError("Choose a Facebook Page before scheduling or posting to Facebook.");
+      return;
+    }
+
     if (action === "schedule" && !scheduledAt) {
       setError("Pick a date and time to schedule this post.");
       return;
@@ -165,22 +181,31 @@ export default function GeneratePage() {
           pageName: selectedPage?.name ?? "Unset",
           action,
           scheduledAt: action === "schedule" ? new Date(scheduledAt).toISOString() : undefined,
+          destinations,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save post.");
 
       if (action === "post_now" && data.post.status === "failed") {
-        throw new Error(data.post.error_message ?? "Facebook rejected this post.");
+        const errorMsg = data.post.facebook_error_message || data.post.instagram_error_message || data.post.error_message;
+        throw new Error(errorMsg || "Publishing failed.");
       }
 
-      setSuccess(
-        action === "draft"
-          ? "Saved as a draft."
-          : action === "schedule"
-            ? "Post scheduled."
-            : "Published to Facebook 🎉"
-      );
+      // Build success message based on destinations
+      let successMsg = "";
+      if (action === "draft") {
+        successMsg = "Saved as a draft.";
+      } else if (action === "schedule") {
+        successMsg = "Post scheduled.";
+      } else {
+        const publishedTo = [];
+        if (data.post.facebook_publish_status === "success") publishedTo.push("Facebook");
+        if (data.post.instagram_publish_status === "success") publishedTo.push("Instagram");
+        successMsg = `Published to ${publishedTo.join(" + ")} 🎉`;
+      }
+
+      setSuccess(successMsg);
       setPublishedUrl(
         action === "post_now" && data.post.facebook_post_id
           ? facebookPostUrl(data.post.facebook_post_id)
@@ -191,6 +216,7 @@ export default function GeneratePage() {
       setImage(null);
       setTopic("");
       setScheduleOpen(false);
+      setDestinations(["facebook"]); // Reset to default
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save post.");
     } finally {
@@ -387,6 +413,60 @@ export default function GeneratePage() {
                   placeholder="https://your-site.com/post"
                   className="mt-1 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground">Publishing destination</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newDestinations: ("facebook" | "instagram")[] = destinations.includes("facebook")
+                        ? destinations.filter((d) => d !== "facebook")
+                        : [...destinations, "facebook"];
+                      setDestinations(newDestinations);
+                    }}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      destinations.includes("facebook")
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:border-border/50"
+                    }`}
+                  >
+                    <FacebookLogo size={16} weight="fill" />
+                    Facebook
+                    {destinations.includes("facebook") && <CheckCircle size={14} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!instagramConnected) {
+                        setError("Connect Instagram in Settings before publishing to Instagram.");
+                        return;
+                      }
+                      const newDestinations: ("facebook" | "instagram")[] = destinations.includes("instagram")
+                        ? destinations.filter((d) => d !== "instagram")
+                        : [...destinations, "instagram"];
+                      setDestinations(newDestinations);
+                    }}
+                    disabled={!instagramConnected}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      destinations.includes("instagram")
+                        ? "border-purple-500 bg-purple-500/10 text-purple-500"
+                        : !instagramConnected
+                        ? "border-dashed border-border bg-surface-2 text-muted-foreground cursor-not-allowed opacity-50"
+                        : "border-border bg-background text-muted-foreground hover:border-border/50"
+                    }`}
+                  >
+                    <InstagramLogo size={16} weight="fill" />
+                    Instagram
+                    {destinations.includes("instagram") && <CheckCircle size={14} />}
+                  </button>
+                </div>
+                {!instagramConnected && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Connect Instagram in Settings to enable Instagram publishing.
+                  </p>
+                )}
               </div>
 
               <div>

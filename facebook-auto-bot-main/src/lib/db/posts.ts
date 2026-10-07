@@ -53,9 +53,22 @@ export async function getPost(id: string): Promise<Post | null> {
 export async function createPostRecord(
   input: Omit<
     Post,
-    "id" | "created_at" | "status" | "posted_at" | "facebook_post_id" | "error_message" | "user_id"
+    | "id"
+    | "created_at"
+    | "status"
+    | "posted_at"
+    | "facebook_post_id"
+    | "error_message"
+    | "user_id"
+    | "publish_destinations"
+    | "facebook_publish_status"
+    | "instagram_publish_status"
+    | "facebook_error_message"
+    | "instagram_error_message"
+    | "instagram_post_id"
   > & {
     status: PostStatus;
+    publish_destinations?: string[];
   }
 ): Promise<Post> {
   try {

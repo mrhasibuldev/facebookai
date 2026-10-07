@@ -28,6 +28,10 @@ create table if not exists app_settings (
   default_page_id text,
   default_page_name text,
   default_page_token text,
+  -- Instagram credentials (independent from Facebook)
+  instagram_app_id text,
+  instagram_app_secret text,
+  instagram_redirect_uri text,
   image_source text not null default 'ai',        -- 'ai' | 'stock' | 'mixed'
   utm_suffix text default '',
   auto_post_enabled boolean not null default false,
@@ -131,6 +135,67 @@ alter table app_settings add column if not exists push_notifications boolean not
 alter table app_settings add column if not exists weekly_reports boolean not null default true;
 alter table app_settings add column if not exists two_factor_enabled boolean not null default false;
 alter table app_settings add column if not exists phone text;
+
+-- Instagram integration migration
+-- Social connections table for multi-platform support
+create table if not exists social_connections (
+  id serial primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  platform text not null,
+  platform_account_id text,
+  platform_account_name text,
+  platform_username text,
+  status text not null default 'disconnected',
+  access_token_reference text,
+  token_expires_at timestamptz,
+  metadata jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint single_connection_per_platform check (platform = 'facebook' or platform = 'instagram'),
+  constraint valid_platform check (platform in ('facebook', 'instagram')),
+  unique(user_id, platform)
+);
+
+-- RLS for social_connections
+alter table social_connections enable row level security;
+
+-- Drop policies if they exist, then create them
+drop policy if exists "Users can view own social connections" on social_connections;
+create policy "Users can view own social connections"
+  on social_connections for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own social connections" on social_connections;
+create policy "Users can insert own social connections"
+  on social_connections for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own social connections" on social_connections;
+create policy "Users can update own social connections"
+  on social_connections for update
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own social connections" on social_connections;
+create policy "Users can delete own social connections"
+  on social_connections for delete
+  using (auth.uid() = user_id);
+
+-- Extend posts table for multi-destination publishing
+alter table posts add column if not exists publish_destinations text[] default '{facebook}';
+alter table posts add column if not exists facebook_publish_status text default 'pending';
+alter table posts add column if not exists instagram_publish_status text default 'pending';
+alter table posts add column if not exists facebook_error_message text;
+alter table posts add column if not exists instagram_error_message text;
+alter table posts add column if not exists instagram_post_id text;
+
+-- Extend app_settings for Autopilot destination configuration
+alter table app_settings add column if not exists autopilot_destinations text[] default '{facebook}';
+
+-- Index for social connections
+create index if not exists social_connections_user_platform_idx on social_connections(user_id, platform);
+
+-- Index for posts by destination
+create index if not exists posts_destinations_idx on posts using gin(publish_destinations);
 
 -- Migration: add user_id to existing tables for multi-user support
 -- This must be done BEFORE enabling RLS and creating policies

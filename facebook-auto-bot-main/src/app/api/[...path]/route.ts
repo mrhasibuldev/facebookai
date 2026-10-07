@@ -30,6 +30,10 @@ import {
   FacebookNotConnectedError,
 } from "@/lib/facebook/client";
 import {
+  getSocialConnection,
+  disconnectSocialConnection,
+} from "@/lib/db/social-connections";
+import {
   buildAuthorizeUrl,
   exchangeCodeForToken,
   exchangeForLongLivedToken,
@@ -76,10 +80,10 @@ function unauthorized() {
  * non-expiring Page tokens, and the middleware deliberately does not cover
  * `/api/*`, so without this check the whole API — read settings, publish,
  * delete, disconnect — would be open to anyone who knew the deployment's URL.
- * The OAuth callback is exempt because it is a redirect back from Facebook and
+ * The OAuth callback is exempt because it is a redirect back from Facebook/Instagram and
  * is already protected by its single-use `state` cookie.
  */
-const OPEN_ROUTES = new Set(["facebook/oauth/callback", "cron/process-queue"]);
+const OPEN_ROUTES = new Set(["facebook/oauth/callback", "instagram/oauth", "cron/process-queue"]);
 
 async function hasSession(req: Request): Promise<boolean> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -146,7 +150,17 @@ async function safely(handler: () => Promise<Response>): Promise<Response> {
 
 /** Tokens must never reach the browser, so they are stripped in one place. */
 async function publicSettings(settings: Awaited<ReturnType<typeof getSettings>>) {
-  const { facebook_user_token, default_page_token, facebook_app_secret, ...safe } = settings;
+  const { facebook_user_token, default_page_token, facebook_app_secret, instagram_app_secret, ...safe } = settings;
+
+  // Get Instagram connection status
+  let instagramConnected = false;
+  let instagramUsername = null;
+  try {
+    const igConnection = await getSocialConnection("instagram");
+    instagramConnected = igConnection?.status === "connected";
+    instagramUsername = igConnection?.platform_username || null;
+  } catch {}
+
   return {
     ...safe,
     // The App ID is public (it travels in the OAuth URL); the secret never
@@ -155,6 +169,9 @@ async function publicSettings(settings: Awaited<ReturnType<typeof getSettings>>)
     facebook_connected: Boolean(facebook_user_token),
     facebook_page_ready: Boolean(default_page_token),
     facebook_configured: await isFacebookConfigured(),
+    instagram_connected: instagramConnected,
+    instagram_username: instagramUsername,
+    instagram_app_secret_set: Boolean(instagram_app_secret),
   };
 }
 
@@ -236,6 +253,10 @@ export async function GET(req: Request, ctx: Ctx) {
       return oauthCallback(req, url);
     }
 
+    if (route === "instagram/disconnect") {
+      return disconnectInstagram();
+    }
+
     if (route === "cron/process-queue") {
       return runCron(req, url);
     }
@@ -265,6 +286,7 @@ const CreatePostBody = z.object({
   pageName: z.string().min(1),
   action: z.enum(["draft", "schedule", "post_now"]),
   scheduledAt: z.string().datetime().optional(),
+  destinations: z.array(z.enum(["facebook", "instagram"])).default(["facebook"]),
 });
 
 const DefaultPageBody = z.object({ pageId: z.string().min(1) });
@@ -331,6 +353,7 @@ export async function POST(req: Request, ctx: Ctx) {
         page_name: b.pageName,
         scheduled_at: b.action === "schedule" ? b.scheduledAt! : null,
         status: b.action === "schedule" ? "scheduled" : "draft",
+        publish_destinations: b.destinations,
       });
 
       if (b.action === "post_now") {
@@ -451,6 +474,8 @@ const SettingsBody = z.object({
   weekly_reports: z.boolean().optional(),
   two_factor_enabled: z.boolean().optional(),
   phone: z.string().max(50).nullable().optional(),
+  // Autopilot destinations
+  autopilot_destinations: z.array(z.enum(["facebook", "instagram"])).optional(),
 });
 
 const UpdateTopicBody = z.object({
@@ -670,6 +695,18 @@ async function oauthCallback(req: Request, url: URL) {
       url.origin,
       "error",
       err instanceof Error ? err.message : "Connection failed."
+    );
+  }
+}
+
+async function disconnectInstagram() {
+  try {
+    await disconnectSocialConnection("instagram");
+    return json({ success: true });
+  } catch (err) {
+    return json(
+      { error: err instanceof Error ? err.message : "Failed to disconnect Instagram" },
+      500
     );
   }
 }

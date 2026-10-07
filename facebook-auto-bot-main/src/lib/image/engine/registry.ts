@@ -101,9 +101,14 @@ export class ImageEngineRegistry {
 
 /**
  * Create a new registry with the standard engines pre-registered
- * 
+ *
  * This is a convenience function for creating a registry with
- * Pollinations and Pexels already registered.
+ * Pollinations, Pexels, and SDXL Cloud already registered.
+ *
+ * Engine priority:
+ * 1. SDXL Cloud (if REPLICATE_API_KEY is configured)
+ * 2. Pollinations AI (fallback)
+ * 3. Pexels Stock (secondary fallback)
  */
 export async function createDefaultRegistry(): Promise<ImageEngineRegistry> {
   const registry = new ImageEngineRegistry();
@@ -115,8 +120,15 @@ export async function createDefaultRegistry(): Promise<ImageEngineRegistry> {
   registry.register(new PollinationsAIEngine());
   registry.register(new PexelsStockEngine());
 
-  // Set Pollinations as default (matches existing behavior)
-  registry.setDefault("pollinations-ai");
+  // Register SDXL Cloud if API key is configured
+  if (process.env.REPLICATE_API_KEY) {
+    const { SDXLCloudEngine } = await import("./providers/sdxl-cloud");
+    registry.register(new SDXLCloudEngine());
+    registry.setDefault("feedwren-internal");
+  } else {
+    // Set Pollinations as default (existing behavior)
+    registry.setDefault("pollinations-ai");
+  }
 
   return registry;
 }

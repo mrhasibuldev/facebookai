@@ -3,7 +3,6 @@
 import { Lock } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
 
 export interface SocialPlatform {
   id: string;
@@ -14,13 +13,6 @@ export interface SocialPlatform {
 }
 
 const FUTURE_PLATFORMS: SocialPlatform[] = [
-  {
-    id: "instagram",
-    name: "Instagram",
-    description: "Publish and manage visual content on Instagram.",
-    icon: <InstagramLogo />,
-    status: "coming-soon",
-  },
   {
     id: "x",
     name: "X",

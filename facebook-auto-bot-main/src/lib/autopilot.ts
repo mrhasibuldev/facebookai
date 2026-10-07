@@ -107,6 +107,7 @@ export async function maybeRunAutopilot(): Promise<AutopilotResult> {
     page_name: settings.default_page_name,
     scheduled_at: null,
     status: "draft",
+    publish_destinations: settings.autopilot_destinations || ["facebook"],
   });
 
   // Recorded once the draft exists, so a failure while generating does not

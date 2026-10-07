@@ -1,6 +1,8 @@
 export type ImageSource = "ai" | "stock";
 export type ImageSourcePref = "ai" | "stock" | "mixed";
 export type PostStatus = "draft" | "scheduled" | "posted" | "failed";
+export type Platform = "facebook" | "instagram";
+export type PublishStatus = "pending" | "success" | "failed";
 
 /**
  * Where autopilot gets its subjects. "mine" rotates through the owner's own
@@ -37,6 +39,11 @@ export interface AppSettings {
   default_page_name: string | null;
   /** Page tokens derived from a long-lived user token do not expire. */
   default_page_token: string | null;
+  /** Instagram App credentials (independent from Facebook) */
+  instagram_app_id: string | null;
+  instagram_app_secret: string | null;
+  /** Instagram Business Login redirect URI (independent from Facebook) */
+  instagram_redirect_uri: string | null;
   image_source: ImageSourcePref;
   utm_suffix: string;
   auto_post_enabled: boolean;
@@ -61,6 +68,8 @@ export interface AppSettings {
   two_factor_enabled: boolean;
   /** Phone number for security notifications (E.164 format preferred) */
   phone: string | null;
+  /** Autopilot publishing destinations */
+  autopilot_destinations: Platform[];
 }
 
 export interface Post {
@@ -80,6 +89,13 @@ export interface Post {
   facebook_post_id: string | null;
   error_message: string | null;
   created_at: string;
+  /** Multi-destination publishing */
+  publish_destinations: Platform[];
+  facebook_publish_status: PublishStatus;
+  instagram_publish_status: PublishStatus;
+  facebook_error_message: string | null;
+  instagram_error_message: string | null;
+  instagram_post_id: string | null;
 }
 
 export interface PageCache {
