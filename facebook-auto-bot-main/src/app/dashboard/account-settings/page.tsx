@@ -96,10 +96,12 @@ export default function AccountSettingsPage() {
       ]);
 
       if (!settingsRes.ok) {
-        const errorData = await settingsRes.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to load settings");
+        const errorText = await settingsRes.text();
+        throw new Error(errorText || "Failed to load settings");
       }
-      const data: Record<string, unknown> = await settingsRes.json();
+      const data: Record<string, unknown> = await settingsRes.json().catch(() => {
+        throw new Error("Invalid response from server");
+      });
 
       setProfile({
         name: (data.display_name as string) || "",
@@ -152,7 +154,7 @@ export default function AccountSettingsPage() {
 
       // Load post count for subscription (lightweight endpoint)
       if (postsCountRes.ok) {
-        const countData = await postsCountRes.json();
+        const countData = await postsCountRes.json().catch(() => ({ count: 0 }));
         setSubscription(prev => ({
           ...prev,
           postsThisMonth: countData.count || 0,

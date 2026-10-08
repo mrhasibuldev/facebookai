@@ -29,8 +29,11 @@ export default function QueuePage() {
     setError(null);
     try {
       const res = await fetch("/api/posts?status=draft,scheduled");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load the queue.");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to load the queue.");
+      }
+      const data = await res.json().catch(() => ({ posts: [] }));
       setPosts(data.posts ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load the queue.");

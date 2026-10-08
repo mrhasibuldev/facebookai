@@ -22,12 +22,15 @@ export default function PagesPage() {
     setNotConnected(false);
     try {
       const res = await fetch(`/api/facebook/pages${refresh ? "?refresh=1" : ""}`);
-      const data = await res.json();
       if (res.status === 409) {
         setNotConnected(true);
         return;
       }
-      if (!res.ok) throw new Error(data.error ?? "Failed to load Pages.");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to load Pages.");
+      }
+      const data = await res.json().catch(() => ({ pages: [], defaultPageId: null }));
       setPages(data.pages ?? []);
       setDefaultId(data.defaultPageId ?? null);
     } catch (err) {
