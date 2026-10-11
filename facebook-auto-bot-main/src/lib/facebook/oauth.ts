@@ -11,18 +11,13 @@ export const GRAPH_BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
  * who have no role on the app. For a single-user tool posting to its owner's
  * own Page, no review is involved.
  *
- * Instagram permissions added for Instagram publishing support:
- * - instagram_basic: Basic Instagram account access
- * - instagram_content_publish: Publish to Instagram
+ * Facebook-only scopes. Instagram has its own separate OAuth implementation
+ * in src/app/api/instagram/auth/route.ts with its own Instagram-specific scopes.
  */
 export const FACEBOOK_SCOPES = [
   "pages_show_list",
   "pages_manage_posts",
   "pages_read_engagement",
-  // Instagram scopes (new architecture - Business Login for Instagram)
-  // Old scopes (instagram_basic, instagram_content_publish) deprecated Jan 27, 2025
-  "instagram_business_basic",
-  "instagram_business_content_publish",
 ];
 
 /**
