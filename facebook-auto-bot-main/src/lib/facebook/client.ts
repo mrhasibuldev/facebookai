@@ -55,13 +55,19 @@ export interface FacebookPage {
  * Every Page this person can create content on. `tasks` is filtered rather
  * than trusted wholesale: being able to see a Page does not mean being allowed
  * to publish to it, and finding that out at post time would be far worse.
+ *
+ * Note: This filter excludes Pages that don't have the CREATE_CONTENT task.
+ * If Meta returns all Pages but only some have CREATE_CONTENT, those without
+ * the task will not appear in the Pages list.
  */
 export async function fetchPages(): Promise<FacebookPage[]> {
   const settings = await loadSettings();
   if (!settings.facebook_user_token) throw new FacebookNotConnectedError();
 
   const pages: FacebookPage[] = [];
+  const skippedPages: Array<{ id: string; name: string; tasks: string[] }> = [];
   let after: string | undefined;
+  let totalMetaPages = 0;
 
   do {
     const params: Record<string, string> = {
@@ -72,8 +78,17 @@ export async function fetchPages(): Promise<FacebookPage[]> {
     if (after) params.after = after;
 
     const data = await graph("/me/accounts", params);
+    totalMetaPages += (data.data ?? []).length;
+
     for (const p of data.data ?? []) {
-      if (Array.isArray(p.tasks) && !p.tasks.includes("CREATE_CONTENT")) continue;
+      if (Array.isArray(p.tasks) && !p.tasks.includes("CREATE_CONTENT")) {
+        skippedPages.push({
+          id: p.id,
+          name: p.name,
+          tasks: p.tasks,
+        });
+        continue;
+      }
       pages.push({
         id: p.id,
         name: p.name,
@@ -83,6 +98,14 @@ export async function fetchPages(): Promise<FacebookPage[]> {
     }
     after = data.paging?.cursors?.after && data.paging?.next ? data.paging.cursors.after : undefined;
   } while (after);
+
+  // Log diagnostic information (safe - no tokens exposed)
+  console.log(`[Facebook Pages] Meta returned: ${totalMetaPages} Pages`);
+  console.log(`[Facebook Pages] After CREATE_CONTENT filter: ${pages.length} Pages`);
+  console.log(`[Facebook Pages] Skipped: ${skippedPages.length} Pages (missing CREATE_CONTENT task)`);
+  if (skippedPages.length > 0) {
+    console.log(`[Facebook Pages] Skipped Page IDs: ${skippedPages.map(p => p.id).join(", ")}`);
+  }
 
   return pages;
 }
